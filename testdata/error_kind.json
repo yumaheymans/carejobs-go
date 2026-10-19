@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Unknown kind 'bogus'. Use one of: nurses, nurse-practitioners, physicians, nursing-assistants, caregivers, therapy-rehab, mental-health, pharmacy, imaging, lab, surgical-techs, emts-paramedics, medical-assistants, dental, admin, allied-health, ai-training."}],"isError":true}}
