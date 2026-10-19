@@ -6,6 +6,7 @@ Go client for the [CareJobs.Now](https://carejobs.now) healthcare jobs API. Sear
 - Standard library only. Go 1.24 or newer.
 - Context-aware methods, typed results, one `*carejobs.Error` type.
 - The same API is a remote MCP server at <https://carejobs.now/api/mcp>, so any MCP client can use it too.
+- Also a `carejobs` command line tool: [see below](#command-line).
 
 ## Where the data comes from
 
@@ -131,14 +132,60 @@ res, err := c.SearchJobs(ctx, params)
 
 With `WithHTTPClient`, your client and the context decide.
 
+## Command line
+
+The module ships a `carejobs` command (standard library only, no key, Go 1.24 or newer to build it):
+
+```sh
+go install github.com/yumaheymans/carejobs-go/cmd/carejobs@latest
+```
+
+Or download a ready-made binary from the [releases page](https://github.com/yumaheymans/carejobs-go/releases). Each release has an archive per system, `carejobs_<version>_<os>_<arch>.zip` for Windows and `carejobs_<version>_<os>_<arch>.tar.gz` for macOS and Linux (`amd64` and `arm64` each), and a `checksums.txt` with their SHA-256. Unpack one and put `carejobs` (`carejobs.exe` on Windows) in a folder on your `PATH`:
+
+```sh
+curl -LO https://github.com/yumaheymans/carejobs-go/releases/download/v1.1.0/carejobs_1.1.0_darwin_arm64.tar.gz
+tar -xzf carejobs_1.1.0_darwin_arm64.tar.gz
+./carejobs --version
+```
+
+The binaries are not code-signed. A browser download may therefore trigger a macOS Gatekeeper or Windows SmartScreen warning; `curl` and `go install` do not.
+
+```sh
+carejobs search "icu nurse" --state TX --limit 5
+carejobs pay --kind nurses
+carejobs market
+carejobs state TX
+carejobs employers --query kaiser
+carejobs employer kaiser-permanente
+carejobs tools
+```
+
+| Command | Options |
+| --- | --- |
+| `search [words]` | `--kind` `--employer` `--state` `--remote` `--min-hourly USD` `--sort` `--limit` `--query` |
+| `pay` | `--kind` `--employer` |
+| `market` | |
+| `state [STATE]` | `--kind` `--limit` |
+| `employers [words]` | `--query` `--type` `--care` `--state` `--kind` `--limit` |
+| `employer SLUG` | |
+| `tools` | |
+
+Options for every command: `--json` prints the raw data as JSON instead of the readable summary, `--base-url`, `--timeout SECONDS` (default 60, because the first query of its kind can take up to about 25 seconds while the server wakes its database), `--help`, `--version`. Options and words can come in any order.
+
+`--kind` takes the exact kinds above and common short names (`rn`, `cna`, `np`, `doctor`, `registered-nurse` and a few more). `--sort` is `mixed`, `newest` or `highest_pay`, `--type` is `employer`, `ai-program` or `job-board`. The exit code is 0 on success, 1 when the API answers with an error or cannot be reached, and 2 for bad usage. The npm and Python packages ship the same command.
+
 ## Tests
 
 ```sh
-go test ./...                        # unit tests, offline, on recorded answers in testdata/
+go test ./...                        # unit tests, offline, on recorded answers in testdata/ (the command line tool too)
 go test -tags live -run Live -v ./... # the same questions against the real API
 ```
 
 The unit tests replay real answers recorded from the live API (long lists are trimmed). A strict-decode test refuses any field that a recorded answer has and the structs do not, and the live test does the same against the live answers and also checks the `Kind` constants against the server's own list.
+
+## Releases
+
+`scripts/build-release.sh` builds the archives of the command into `dist/` (Windows, macOS and Linux, `amd64` and `arm64`, with `checksums.txt`). Pushing a tag such as `v1.1.0` runs the same script in [`.github/workflows/release.yml`](.github/workflows/release.yml) and attaches the archives to the GitHub release. The tag must match the `Version` constant in `client.go`.
 
 ## License
 

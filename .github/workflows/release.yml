@@ -1,0 +1,50 @@
+# Builds the carejobs command for Windows, macOS and Linux (amd64 and arm64) when a
+# version tag is pushed, and attaches the archives and checksums.txt to the GitHub
+# release of that tag (the release is created if it does not exist).
+#
+#   git tag v1.1.0 && git push origin v1.1.0
+#
+# The tag must match the Version constant in client.go: scripts/build-release.sh
+# stops otherwise. The archives are the ones scripts/build-release.sh makes on a
+# developer machine. A release asset that already exists is left alone
+# (overwrite_files: false), so archives uploaded by hand before the tag was pushed
+# stay exactly as uploaded, and so do any checksums published for them.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check and test
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+
+      - name: Build the archives
+        run: bash scripts/build-release.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Attach them to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/checksums.txt
+          fail_on_unmatched_files: true
+          overwrite_files: false
+          generate_release_notes: true
